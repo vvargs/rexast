@@ -1,0 +1,25 @@
+name: 01-V
+on: 
+  workflow_dispatch:
+    inputs:
+      url:
+        required: true
+        description: m3u8 URL
+jobs:
+  rexast_v:
+    runs-on: ubuntu-latest
+    steps :
+    - uses: actions/checkout@v2
+    - name: Installing
+      run : |
+        sudo apt update -y
+        sudo wget -q 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz'
+        sudo tar xvf ffmpeg-master-latest-linux64-gpl.tar.xz
+        sudo chmod a+rx ffmpeg-master-latest-linux64-gpl/bin/ffmpeg ffmpeg-master-latest-linux64-gpl/bin/ffprobe
+        sudo mv ffmpeg-master-latest-linux64-gpl/bin/ffmpeg ffmpeg-master-latest-linux64-gpl/bin/ffprobe /usr/local/bin/
+        sudo rm -rf ffmpeg-master-latest-linux64-gpl ffmpeg-master-latest-linux64-gpl.tar.xz
+   
+    - name: restream V_RTMP
+      env :
+        V_RTMP: ${{ secrets.V_RTMP }}
+      run : ffmpeg -re -v quiet -protocol_whitelist file,http,https,tcp,tls,crypto -i "${{github.event.inputs.url}}" -vf scale=640:-2,gradfun=2:8 -c:v libx264 -pix_fmt yuv420p -preset veryfast -r 30 -g 60 -bf 2 -crf 28 -maxrate 1M -bufsize 2M -c:a aac -b:a 256k -map_metadata -1 -f flv "${{ env.V_RTMP }}"
